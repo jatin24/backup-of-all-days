@@ -1,0 +1,299 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<conio.h>
+#include<string.h>
+//int binary(int);
+typedef struct optab
+{
+    char in[20];//instruction
+    int op;//opcode
+}optab;
+typedef struct instruc
+{
+    int ad;//address of instruction
+    char l[10];//label
+    char i[10];//instruction
+    char o[10];//operand
+    int opcode;//opcode
+    char symtab[10];
+}instruc;
+int main()
+{
+        optab a[20];                                                            //TO STORE ALL INSTRUCTIONS AND OPCODES
+        int address[20]={0x0},amain[20]={0},h[10],size=0x0,f1;   //TO STORE ADDRESSES OF SYMBOLS IN PROGRAM
+        instruc b[30];                                                          //TO STORE PROGRAM
+        int ad=0x0,disp=0x0,t=0xaaaa,ch1;                                                   //ADDRESS,NEW ADDRESS,DISPLACEMENT
+        int i=0,j=0,nad=0x0,pc=0x0,k,m,c,k1,q,nnad,counter;
+        long long int t1;                                              //VARIABLES
+        char ch;
+        FILE *f;                                                                //FILE POINTER
+        f=fopen("opcode.txt","r");                                              //READING OPCODE FILE
+        if(f==NULL)
+        {
+          puts("CAN'T OPEN FILE");
+          exit(1);
+        }
+        else
+        {
+            while(fscanf(f,"%s %x\n",&a[i].in,&a[i].op)!=EOF)
+            {
+                //printf("%s     %x\n",a[i].in,a[i].op);
+                i++;
+            }
+        }
+        fclose(f);                                                              //OPCODE FILE REEAD
+        f=fopen("prog.txt","r");                                                //READING PROGRAM FILE
+        if(f==NULL)
+        {
+            puts("CAN'T OPEN FILE");
+            exit(2);
+        }
+        else
+        {
+            while(fscanf(f,"%s\t%s\t%s\n",&b[j].l,&b[j].i,&b[j].o)!=EOF)
+            {
+                //printf("%s\t%s\t%s\n",b[j].l,b[j].i,b[j].o);
+                j++;
+            }
+        }
+        fclose(f);                                                              //PROGRAM FILE READ
+        nad=0;
+        printf("\n\n\t\tJAC ASSEMBLER:\n\n");
+        printf("\nPROGRAM WILL START AT 0000 ADDRESS INITIALLY\n");
+        printf("\nDO YOU WANT TO RELOCATE :\n\nPRESS    y/Y FOR YES or ANY OTHER KEY FOR NO : ");                          //RELOCATABLE ADDRESS
+        scanf("%c",&ch);
+        if(ch=='y'||ch=='Y')
+        {
+            printf("\nENTER NEW ADDRESS:");
+            scanf("%x",&nad);
+        }
+        system("cls");
+        //pass 1
+        b[0].ad=nad;
+        b[0].opcode=t;
+        pc=nad;
+        for(k=1;k<j;k++)
+        {
+            c=0;
+            //address calcultion
+            b[k].ad=pc;
+            //checking symbol in symbol table
+            if(strcmp(b[k].l,"_____"))
+            {
+                for(i=0;i<j;i++)
+                {
+                    if(!strcmp(b[i].symtab,b[k].l))
+                    {
+                        printf("\nERROR\n");
+                        exit(3);
+                    }
+                }
+                strcpy(b[k].symtab,b[k].l);
+                address[k]=b[k].ad;
+            }
+            //checking for intruction in optab
+            for(m=0;m<15;m++)
+            {
+
+                if(!strcmp(b[k].i,a[m].in))
+                {
+                    c++;
+                    b[k].opcode=a[m].op;
+                    amain[k]=1;
+                    pc=pc+3;
+                }
+
+            }
+            if(c==0)
+            {
+                if(!strcmp(b[k].i,"RESB"))
+                {
+                    q=atoi(b[k].o);
+                    b[k].opcode=0xaaaa;
+                    pc=pc+q;
+                }
+                else if(!strcmp(b[k].i,"RESW"))
+                {
+                    q=atoi(b[k].o);
+                    pc=pc+3*q;
+                    b[k].opcode=0xaaaa;
+                }
+                else if(!strcmp(b[k].i,"BYTE"))
+                {
+                    nnad=strlen(b[k].o);
+                    //nnad=nnad-3;
+                    pc=pc+nnad;
+                    b[k].opcode=atoi(b[k].o);
+                }
+                else if(!strcmp(b[k].i,"WORD"))
+                {
+                    pc=pc+3;
+                    q=atoi(b[k].o);
+                    b[k].opcode=q;
+                }
+            }
+        }//PASS 1 ENDS
+        size=(pc-nad)+1;
+        printf("\nPASS 1 ENDS:\n\nSIZE CALCULATED IS %x\n\n",size);
+        printf("\npress enter to continue:");
+        getch();
+        system("cls");
+        k1=k;
+        /*printf("\npc:%x    nad:%x    size:%x\n",pc,nad,size);
+        for(k=0;k<j;k++)
+        {
+           printf("\n%x\t%s\t%s\t%s\n",b[k].ad,b[k].l,b[k].i,b[k].o);
+        }*/
+        //pass 2
+        k1=k;
+        pc=nad;
+        for(k=1;k<j-1;k++)
+        {
+            c=0;
+            for(m=0;m<15;m++)
+            {
+                if(!strcmp(b[k].i,a[m].in))
+                {
+                    c++;
+                    pc=pc+3;
+                    break;
+                }
+            }
+            if(c==1)
+            {
+                disp=0x0;
+                for(m=0;m<j;m++)
+                {
+                    if(!strcmp(b[k].o,b[m].symtab))
+                    {
+                        disp=address[m];
+                    }
+                }
+                //printf("1:b[k].opcode=%x\n",b[k].opcode);
+                b[k].opcode=(b[k].opcode*0x10000)+disp;
+                //printf("2:b[k].opcode=%x\n",b[k].opcode);
+            }
+        }//PASS 2 ENDS
+        printf("\nPASS 2 ENDS:\n");
+        printf("\nDO YOU WANT TO PRINT THE PROGRAM:\n\nPRESS 1 FOR YES AND ANY OTHER KEY FOR NO : ");
+        scanf("%d",&ch1);
+        printf("\n");
+        if(ch1==1)
+        {
+            for(k=0;k<j;k++)
+            {
+                printf("%x\t%s\t%s\t%s\t",b[k].ad,b[k].l,b[k].i,b[k].o);
+                if(b[k].opcode==0xaaaa)
+                {
+                    printf("     \n");
+                }
+                else
+                {
+                    printf("%x\n",b[k].opcode);
+                }
+            }
+        }
+        printf("\npress enter to continue:");
+        getch();
+        system("cls");
+        //writing output
+        pc=nad;
+        int qq=0;
+        printf("\n");
+        for(i=0;i<j;i++)
+        {
+            if(amain[i]==1)
+            {
+                if(b[i].opcode!=0xaaaa)
+                {
+                    if(qq%4==0)
+                    {
+                         printf("\n%x\t",pc);
+                    }
+                    qq++;
+                    printf("%x\t",b[i].opcode);
+                    pc=pc+3;
+                }
+                else
+                {
+                    printf("x");
+                }
+            }
+        }
+        //writing text record
+        counter=0;
+        f=fopen("record.txt","w");
+        fprintf(f,"H %x %x\n",nad,size);
+        for(i=0;i<j;i++)
+        {
+            if(amain[i]==1)
+            {
+                counter++;
+            }
+        }
+        if(counter>30)
+        {
+            if((counter/2)<=30)
+            {
+                counter=2;
+            }
+            else if((counter/3)<=30)
+            {
+                counter=3;
+            }
+            else if((counter/4)<=30)
+            {
+                counter=4;
+            }
+            else if((counter/5)<=30)
+            {
+                counter=5;
+            }
+        }
+        if(counter>0)
+        {
+            fprintf(f,"T ");
+            for(i=0;i<j;i++)
+            {
+                if(amain[i]==1)
+                {
+                    if(b[i].opcode!=0xaaaa)
+                    {
+                        //t1=binary(b[i].opcode);
+                        fprintf(f,"%x  ",b[i].opcode);
+                    }
+                    if(b[i].opcode==0xaaaa)
+                    {
+                        fprintf(f,"\n");
+                        break;
+                    }
+                }
+            }
+            printf("\n");
+            counter--;
+        }
+        for(i=0;i<j;i++)
+        {
+            if(amain[i]==1)
+            {
+                f1=address[i];
+                break;
+            }
+        }
+        fprintf(f,"\ne %x\n",f1);
+        fclose(f);
+}
+/*
+int binary(int n)
+{
+     long long int r,s=0,i=1;
+    while (n!=0)
+    {
+        r=n%2;
+        s=s+(r*i);
+        i=i*10;
+        n=n/2;
+    }
+    return s;
+}
+*/
